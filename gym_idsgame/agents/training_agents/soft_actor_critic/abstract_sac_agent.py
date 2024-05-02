@@ -7,7 +7,7 @@ import logging
 import random
 import torch
 from abc import ABC, abstractmethod
-from gym_idsgame.agents.training_agents.soft_actor_critic.sac_agent_config import SACAgentConfig
+from gym_idsgame.agents.training_agents.soft_actor_critic.abstract_sac_agent_config import AbstractSACAgentConfig
 from gym_idsgame.envs.idsgame_env import IdsGameEnv
 from gym_idsgame.agents.dao.experiment_result import ExperimentResult
 from gym_idsgame.agents.training_agents.train_agent import TrainAgent
