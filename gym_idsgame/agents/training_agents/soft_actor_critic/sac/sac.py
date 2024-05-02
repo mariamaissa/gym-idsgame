@@ -8,15 +8,15 @@ import tqdm
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from gym_idsgame.envs.rendering.video.idsgame_monitor import IdsGameMonitor
-from gym_idsgame.agents.training_agents.q_learning.q_agent_config import QAgentConfig
+from gym_idsgame.agents.training_agents.soft_actor_critic.sac_agent_config import SACAgentConfig
 from gym_idsgame.envs.idsgame_env import IdsGameEnv
 from gym_idsgame.agents.dao.experiment_result import ExperimentResult
 from gym_idsgame.envs.constants import constants
 from gym_idsgame.agents.training_agents.models.fnn_w_linear import FNNwithLinear
 from gym_idsgame.agents.training_agents.q_learning.experience_replay.replay_buffer import ReplayBuffer
-from gym_idsgame.agents.training_agents.q_learning.q_agent import QAgent
+from gym_idsgame.agents.training_agents.soft_actor_critic.abstract_sac_agent import AbstractSACAgent
 
-class DQNAgent(QAgent):
+class SACAgent(QAgent):
     """
     An implementation of the DQN algorithm from the paper 'Human-level control through deep reinforcement learning' by
     Mnih et. al.

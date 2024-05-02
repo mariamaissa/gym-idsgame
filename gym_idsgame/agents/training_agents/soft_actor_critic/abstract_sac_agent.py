@@ -12,7 +12,7 @@ from gym_idsgame.envs.idsgame_env import IdsGameEnv
 from gym_idsgame.agents.dao.experiment_result import ExperimentResult
 from gym_idsgame.agents.training_agents.train_agent import TrainAgent
 
-class SACAgent(TrainAgent, ABC):
+class AbstractSACAgent(TrainAgent, ABC):
     """
     Abstract SACAgent
     """
