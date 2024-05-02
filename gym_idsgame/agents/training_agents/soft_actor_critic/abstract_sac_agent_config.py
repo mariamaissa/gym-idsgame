@@ -6,7 +6,7 @@ from gym_idsgame.agents.training_agents.soft_actor_critic.sac.sac_config import 
 from torch.utils.tensorboard import SummaryWriter
 
 
-class SACAgentConfig:
+class AbstractSACAgentConfig:
     """
     DTO with configuration for SACAgent
     """

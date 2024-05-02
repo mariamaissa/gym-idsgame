@@ -1,5 +1,5 @@
 """
-An agent for the IDSGameEnv that implements the DQN algorithm.
+An agent for the IDSGameEnv that implements the SAC algorithm.
 """
 from typing import Union
 import numpy as np
@@ -8,7 +8,7 @@ import tqdm
 import torch
 from torch.utils.tensorboard import SummaryWriter
 from gym_idsgame.envs.rendering.video.idsgame_monitor import IdsGameMonitor
-from gym_idsgame.agents.training_agents.soft_actor_critic.sac_agent_config import SACAgentConfig
+from gym_idsgame.agents.training_agents.soft_actor_critic.abstract_sac_agent_config import AbstractSACAgentConfig
 from gym_idsgame.envs.idsgame_env import IdsGameEnv
 from gym_idsgame.agents.dao.experiment_result import ExperimentResult
 from gym_idsgame.envs.constants import constants
@@ -16,35 +16,30 @@ from gym_idsgame.agents.training_agents.models.fnn_w_linear import FNNwithLinear
 from gym_idsgame.agents.training_agents.q_learning.experience_replay.replay_buffer import ReplayBuffer
 from gym_idsgame.agents.training_agents.soft_actor_critic.abstract_sac_agent import AbstractSACAgent
 
-class SACAgent(QAgent):
-    """
-    An implementation of the DQN algorithm from the paper 'Human-level control through deep reinforcement learning' by
-    Mnih et. al.
-
-    (DQN is originally Neural-fitted Q-iteration but with the addition of a separate target network)
-    """
-    def __init__(self, env:IdsGameEnv, config: QAgentConfig):
+class SACAgent(AbstractSACAgent):
+    def __init__(self, env: IdsGameEnv, config: AbstractSACAgentConfig):
         """
         Initialize environment and hyperparameters
 
         :param config: the configuration
         """
-        super(DQNAgent, self).__init__(env, config)
+        super(SACAgent, self).__init__(env, config)
         self.attacker_q_network = None
-        self.attacker_target_network = None
+        self.attacker_target_network = None  # TODO: @Ian delete if: using internalized target model
         self.defender_q_network = None
-        self.defender_target_network = None
+        self.defender_target_network = None  # TODO: @Ian delete: if: using internalized target model
         self.loss_fn = None
-        self.attacker_optimizer = None
-        self.defender_optimizer = None
-        self.attacker_lr_decay = None
-        self.defender_lr_decay = None
-        self.tensorboard_writer = SummaryWriter(self.config.dqn_config.tensorboard_dir)
-        self.buffer = ReplayBuffer(config.dqn_config.replay_memory_size)
+        self.attacker_optimizer = None  # TODO: @Ian delete: not necessary
+        self.defender_optimizer = None  # TODO: @Ian delete: not necessary
+        self.attacker_lr_decay = None   # TODO: @Ian delete: not necessary
+        self.defender_lr_decay = None   # TODO: @Ian delete: not necessary
+        self.tensorboard_writer = SummaryWriter(self.config.sac_config.tensorboard_dir)
+        self.buffer = ReplayBuffer(config.sac_config.replay_memory_size)
         self.initialize_models()
         self.tensorboard_writer.add_hparams(self.config.hparams_dict(), {})
         self.env.idsgame_config.save_trajectories = False
         self.env.idsgame_config.save_attack_stats = False
+        # TODO: add is_hdc boolean here
 
     def warmup(self) -> None:
         """
@@ -54,7 +49,7 @@ class SACAgent(QAgent):
         """
 
         # Setup logging
-        outer_warmup = tqdm.tqdm(total=self.config.dqn_config.replay_start_size, desc='Warmup', position=0)
+        outer_warmup = tqdm.tqdm(total=self.config.sac_config.replay_start_size, desc='Warmup', position=0)
         outer_warmup.set_description_str("[Warmup] step:{}, buffer_size: {}".format(0, 0))
 
         # Reset env
@@ -65,8 +60,8 @@ class SACAgent(QAgent):
         obs = (obs_state_a, obs_state_d)
         self.config.logger.info("Starting warmup phase to fill replay buffer")
 
-        # Perform <self.config.dqn_config.replay_start_size> steps and fill the replay memory
-        for i in range(self.config.dqn_config.replay_start_size):
+        # Perform <self.config.sac_config.replay_start_size> steps and fill the replay memory
+        for i in range(self.config.sac_config.replay_start_size):
 
             if i % self.config.train_log_frequency == 0:
                 log_str = "[Warmup] step:{}, buffer_size: {}".format(i, self.buffer.size())
@@ -104,19 +99,19 @@ class SACAgent(QAgent):
                 obs = (obs_state_a, obs_state_d)
 
         self.config.logger.info("{} Warmup steps completed, replay buffer size: {}".format(
-            self.config.dqn_config.replay_start_size, self.buffer.size()))
+            self.config.sac_config.replay_start_size, self.buffer.size()))
         self.env.close()
 
         try:
             # Add network graph to tensorboard with a sample batch as input
-            mini_batch = self.buffer.sample(self.config.dqn_config.batch_size)
+            mini_batch = self.buffer.sample(self.config.sac_config.batch_size)
             s_attacker_batch, s_defender_batch, a_attacker_batch, a_defender_batch, r_attacker_batch, r_defender_batch, \
             d_batch, s2_attacker_batch, s2_defender_batch = mini_batch
 
             if self.config.attacker:
                 s_1 = torch.tensor(s_attacker_batch).float()
                 # Move to GPU if using GPU
-                if torch.cuda.is_available() and self.config.dqn_config.gpu:
+                if torch.cuda.is_available() and self.config.sac_config.gpu:
                     device = torch.device("cuda:0")
                     s_1 = s_1.to(device)
 
@@ -126,7 +121,7 @@ class SACAgent(QAgent):
 
                 s_1 = torch.tensor(s_defender_batch).float()
                 # Move to GPU if using GPU
-                if torch.cuda.is_available() and self.config.dqn_config.gpu:
+                if torch.cuda.is_available() and self.config.sac_config.gpu:
                     device = torch.device("cuda:0")
                     s_1 = s_1.to(device)
 
@@ -140,26 +135,29 @@ class SACAgent(QAgent):
         :return: None
         """
 
+        # TODO: @Ian
+        #  (1) replace with your own models delete target models
+        #  (2) add boolean for init NN or HDC models
         # Initialize models
-        self.attacker_q_network = FNNwithLinear(self.config.dqn_config.input_dim, self.config.dqn_config.attacker_output_dim,
-                                                self.config.dqn_config.hidden_dim,
-                                                num_hidden_layers=self.config.dqn_config.num_hidden_layers,
-                                                hidden_activation=self.config.dqn_config.hidden_activation)
-        self.attacker_target_network = FNNwithLinear(self.config.dqn_config.input_dim, self.config.dqn_config.attacker_output_dim,
-                                                     self.config.dqn_config.hidden_dim,
-                                                     num_hidden_layers=self.config.dqn_config.num_hidden_layers,
-                                                     hidden_activation=self.config.dqn_config.hidden_activation)
-        self.defender_q_network = FNNwithLinear(self.config.dqn_config.input_dim, self.config.dqn_config.defender_output_dim,
-                                                self.config.dqn_config.hidden_dim,
-                                                num_hidden_layers=self.config.dqn_config.num_hidden_layers,
-                                                hidden_activation=self.config.dqn_config.hidden_activation)
-        self.defender_target_network = FNNwithLinear(self.config.dqn_config.input_dim, self.config.dqn_config.defender_output_dim,
-                                                     self.config.dqn_config.hidden_dim,
-                                                     num_hidden_layers=self.config.dqn_config.num_hidden_layers,
-                                                     hidden_activation=self.config.dqn_config.hidden_activation)
+        self.attacker_q_network = FNNwithLinear(self.config.sac_config.input_dim, self.config.sac_config.attacker_output_dim,
+                                                self.config.sac_config.hidden_dim,
+                                                num_hidden_layers=self.config.sac_config.num_hidden_layers,
+                                                hidden_activation=self.config.sac_config.hidden_activation)
+        self.attacker_target_network = FNNwithLinear(self.config.sac_config.input_dim, self.config.sac_config.attacker_output_dim,
+                                                     self.config.sac_config.hidden_dim,
+                                                     num_hidden_layers=self.config.sac_config.num_hidden_layers,
+                                                     hidden_activation=self.config.sac_config.hidden_activation)
+        self.defender_q_network = FNNwithLinear(self.config.sac_config.input_dim, self.config.sac_config.defender_output_dim,
+                                                self.config.sac_config.hidden_dim,
+                                                num_hidden_layers=self.config.sac_config.num_hidden_layers,
+                                                hidden_activation=self.config.sac_config.hidden_activation)
+        self.defender_target_network = FNNwithLinear(self.config.sac_config.input_dim, self.config.sac_config.defender_output_dim,
+                                                     self.config.sac_config.hidden_dim,
+                                                     num_hidden_layers=self.config.sac_config.num_hidden_layers,
+                                                     hidden_activation=self.config.sac_config.hidden_activation)
 
         # Specify device
-        if torch.cuda.is_available() and self.config.dqn_config.gpu:
+        if torch.cuda.is_available() and self.config.sac_config.gpu:
             device = torch.device("cuda:0")
             self.config.logger.info("Running on the GPU")
         else:
@@ -179,38 +177,39 @@ class SACAgent(QAgent):
         self.attacker_target_network.eval()
         self.defender_target_network.eval()
 
+        # TODO: @Ian Delete below commented out code
         # Construct loss function
-        if self.config.dqn_config.loss_fn == "MSE":
-            self.loss_fn = torch.nn.MSELoss()
-        elif self.config.dqn_config.loss_fn == "Huber":
-            self.loss_fn = torch.nn.SmoothL1Loss()
-        else:
-            raise ValueError("Loss function not recognized")
-
-        # Define Optimizer. The call to model.parameters() in the optimizer constructor will contain the learnable
-        # parameters of the layers in the model
-        if self.config.dqn_config.optimizer == "Adam":
-            self.attacker_optimizer = torch.optim.Adam(self.attacker_q_network.parameters(), lr=self.config.alpha)
-            self.defender_optimizer = torch.optim.Adam(self.defender_q_network.parameters(), lr=self.config.alpha)
-        elif self.config.dqn_config.optimizer == "SGD":
-            self.attacker_optimizer = torch.optim.SGD(self.attacker_q_network.parameters(), lr=self.config.alpha)
-            self.defender_optimizer = torch.optim.SGD(self.defender_q_network.parameters(), lr=self.config.alpha)
-        else:
-            raise ValueError("Optimizer not recognized")
-
-        # LR decay
-        if self.config.dqn_config.lr_exp_decay:
-            self.attacker_lr_decay = torch.optim.lr_scheduler.ExponentialLR(optimizer=self.attacker_optimizer,
-                                                                       gamma=self.config.dqn_config.lr_decay_rate)
-            self.defender_lr_decay = torch.optim.lr_scheduler.ExponentialLR(optimizer=self.attacker_optimizer,
-                                                                            gamma=self.config.dqn_config.lr_decay_rate)
+        # if self.config.sac_config.loss_fn == "MSE":
+        #     self.loss_fn = torch.nn.MSELoss()
+        # elif self.config.sac_config.loss_fn == "Huber":
+        #     self.loss_fn = torch.nn.SmoothL1Loss()
+        # else:
+        #     raise ValueError("Loss function not recognized")
+        #
+        # # Define Optimizer. The call to model.parameters() in the optimizer constructor will contain the learnable
+        # # parameters of the layers in the model
+        # if self.config.sac_config.optimizer == "Adam":
+        #     self.attacker_optimizer = torch.optim.Adam(self.attacker_q_network.parameters(), lr=self.config.alpha)
+        #     self.defender_optimizer = torch.optim.Adam(self.defender_q_network.parameters(), lr=self.config.alpha)
+        # elif self.config.sac_config.optimizer == "SGD":
+        #     self.attacker_optimizer = torch.optim.SGD(self.attacker_q_network.parameters(), lr=self.config.alpha)
+        #     self.defender_optimizer = torch.optim.SGD(self.defender_q_network.parameters(), lr=self.config.alpha)
+        # else:
+        #     raise ValueError("Optimizer not recognized")
+        #
+        # # LR decay
+        # if self.config.sac_config.lr_exp_decay:
+        #     self.attacker_lr_decay = torch.optim.lr_scheduler.ExponentialLR(optimizer=self.attacker_optimizer,
+        #                                                                gamma=self.config.sac_config.lr_decay_rate)
+        #     self.defender_lr_decay = torch.optim.lr_scheduler.ExponentialLR(optimizer=self.attacker_optimizer,
+        #                                                                     gamma=self.config.sac_config.lr_decay_rate)
 
 
     def training_step(self,
                       mini_batch: Union[np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray, np.ndarray,
                                         np.ndarray, np.ndarray, np.ndarray], attacker: bool = True) -> torch.Tensor:
         """
-        Performs a training step of the Deep-Q-learning algorithm (implemented in PyTorch)
+        Performs a training step of the SAC algorithm (implemented in PyTorch)
 
         :param mini_batch: a minibatch to use for the training step
         :param attacker: whether doing a training step for the attacker (otherwise defender)
@@ -236,7 +235,7 @@ class SACAgent(QAgent):
             s_2 = torch.tensor(s2_defender_batch).float()
 
         # Move to GPU if using GPU
-        if torch.cuda.is_available() and self.config.dqn_config.gpu:
+        if torch.cuda.is_available() and self.config.sac_config.gpu:
             device = torch.device("cuda:0")
             r_1 = r_1.to(device)
             s_1 = s_1.to(device)
@@ -257,7 +256,7 @@ class SACAgent(QAgent):
             else:
                 target_next = self.defender_target_network(s_2).detach()
 
-        for i in range(self.config.dqn_config.batch_size):
+        for i in range(self.config.sac_config.batch_size):
             # As defined by Mnih et. al. : For terminal states the Q-target should be equal to the immediate reward
             if d_batch[i]:
                 if attacker:
@@ -282,21 +281,21 @@ class SACAgent(QAgent):
 
         loss = self.loss_fn(prediction, target)
 
+        # TODO: @Ian do we want to delete the below code?
         # Zero gradients, perform a backward pass, and update the weights.
-        if attacker:
-            self.attacker_optimizer.zero_grad()
-            loss.backward()
-            self.attacker_optimizer.step()
-        else:
-            self.defender_optimizer.zero_grad()
-            loss.backward()
-            self.defender_optimizer.step()
+        # if attacker:
+        #     self.attacker_optimizer.zero_grad()
+        #     loss.backward()
+        #     self.attacker_optimizer.step()
+        # else:
+        #     self.defender_optimizer.zero_grad()
+        #     loss.backward()
+        #     self.defender_optimizer.step()
 
         return loss
 
     def get_action(self, state: np.ndarray, eval : bool = False, attacker : bool = True) -> int:
         """
-        Samples an action according to a epsilon-greedy strategy using the Q-network
 
         :param state: the state to sample an action for
         :param eval: boolean flag whether running in evaluation mode
@@ -306,7 +305,7 @@ class SACAgent(QAgent):
         state = torch.from_numpy(state.flatten()).float()
 
         # Move to GPU if using GPU
-        if torch.cuda.is_available() and self.config.dqn_config.gpu:
+        if torch.cuda.is_available() and self.config.sac_config.gpu:
             device = torch.device("cuda:0")
             state = state.to(device)
 
@@ -317,9 +316,10 @@ class SACAgent(QAgent):
             actions = list(range(self.env.num_defense_actions))
             legal_actions = list(filter(lambda action: self.env.is_defense_legal(action), actions))
 
-        if (np.random.rand() < self.config.epsilon and not eval) \
-                or (eval and np.random.random() < self.config.eval_epsilon):
-            return np.random.choice(legal_actions)
+        # TODO: @Ian to delete
+        # if (np.random.rand() < self.config.epsilon and not eval) \
+        #         or (eval and np.random.random() < self.config.eval_epsilon):
+        #     return np.random.choice(legal_actions)
 
         with torch.no_grad():
             if attacker:
@@ -331,7 +331,7 @@ class SACAgent(QAgent):
 
     def train(self) -> ExperimentResult:
         """
-        Runs the DQN algorithm
+        Runs the SAC algorithm
 
         :return: Experiment result
         """
@@ -357,9 +357,9 @@ class SACAgent(QAgent):
         episode_avg_defender_loss = []
 
         # Logging
-        self.outer_train.set_description_str("[Train] epsilon:{:.2f},avg_a_R:{:.2f},avg_d_R:{:.2f},"
+        self.outer_train.set_description_str("[Train]avg_a_R:{:.2f},avg_d_R:{:.2f},"
                                              "avg_t:{:.2f},avg_h:{:.2f},acc_A_R:{:.2f}," \
-                                             "acc_D_R:{:.2f}".format(self.config.epsilon, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
+                                             "acc_D_R:{:.2f}".format(0.0, 0.0, 0.0, 0.0, 0.0, 0.0))
 
         # Training
         for episode in range(self.config.num_episodes):
@@ -398,7 +398,7 @@ class SACAgent(QAgent):
                 self.buffer.add_tuple(obs, action, reward, done, obs_prime)
 
                 # Sample random mini_batch of transitions from replay memory
-                minibatch = self.buffer.sample(self.config.dqn_config.batch_size)
+                minibatch = self.buffer.sample(self.config.sac_config.batch_size)
 
                 # Perform a gradient descent step of the Q-network using targets produced by target network
                 if self.config.attacker:
@@ -426,11 +426,12 @@ class SACAgent(QAgent):
             if self.config.render:
                 self.env.render(mode="human")
 
+            # TODO: @Ian Delete this since we're not using lr decay rate (?)
             # Decay LR after every episode
-            lr = self.config.alpha
-            if self.config.dqn_config.lr_exp_decay:
-                self.attacker_lr_decay.step()
-                lr = self.attacker_lr_decay.get_lr()[0]
+            # lr = self.config.alpha
+            # if self.config.sac_config.lr_exp_decay:
+            #     self.attacker_lr_decay.step()
+            #     lr = self.attacker_lr_decay.get_lr()[0]
 
             # Record episode metrics
             self.num_train_games += 1
@@ -486,8 +487,8 @@ class SACAgent(QAgent):
                 self.num_train_games = 0
                 self.num_train_hacks = 0
 
-            # Update target network every <self.config.dqn_config.target_network_update_freq> episodes
-            if episode % self.config.dqn_config.target_network_update_freq == 0:
+            # Update target network every <self.config.sac_config.target_network_update_freq> episodes
+            if episode % self.config.sac_config.target_network_update_freq == 0:
                 self.update_target_network()
 
             # Run evaluation every <self.config.eval_frequency> episodes
@@ -514,9 +515,6 @@ class SACAgent(QAgent):
             attacker_obs, defender_obs = obs
             self.outer_train.update(1)
 
-            # Anneal epsilon linearly
-            self.anneal_epsilon()
-
         self.config.logger.info("Training Complete")
 
         # Final evaluation (for saving Gifs etc)
@@ -535,23 +533,25 @@ class SACAgent(QAgent):
 
         return self.train_result
 
-    def update_target_network(self) -> None:
-        """
-        Updates the target networks. Delayed targets are used to stabilize training and partially remedy the
-        problem with non-stationary targets in RL with function approximation.
+    # TODO: @Ian Delete below commented out code
+    # def update_target_network(self) -> None:
+    #     """
+    #     Updates the target networks. Delayed targets are used to stabilize training and partially remedy the
+    #     problem with non-stationary targets in RL with function approximation.
+    #
+    #     :return: None
+    #     """
+    #     self.config.logger.info("Updating target network")
+    #
+    #     if self.config.attacker:
+    #         self.attacker_target_network.load_state_dict(self.attacker_q_network.state_dict())
+    #         self.attacker_target_network.eval()
+    #
+    #     if self.config.defender:
+    #         self.defender_target_network.load_state_dict(self.defender_q_network.state_dict())
+    #         self.defender_target_network.eval()
 
-        :return: None
-        """
-        self.config.logger.info("Updating target network")
-
-        if self.config.attacker:
-            self.attacker_target_network.load_state_dict(self.attacker_q_network.state_dict())
-            self.attacker_target_network.eval()
-
-        if self.config.defender:
-            self.defender_target_network.load_state_dict(self.defender_q_network.state_dict())
-            self.defender_target_network.eval()
-
+    # TODO: @Ian this function may be unnecessary
     def eval(self, train_episode, log=True) -> ExperimentResult:
         """
         Performs evaluation with the greedy policy with respect to the learned Q-values
@@ -716,14 +716,14 @@ class SACAgent(QAgent):
         if self.config.save_dir is not None:
             if self.config.attacker:
                 path = self.config.save_dir + "/" + time_str + "_attacker_q_network.pt"
-                self.config.logger.info("Saving Q-network to: {}".format(path))
+                self.config.logger.info("Saving SAC model to: {}".format(path))
                 torch.save(self.attacker_q_network.state_dict(), path)
             if self.config.defender:
                 path = self.config.save_dir + "/" + time_str + "_defender_q_network.pt"
                 self.config.logger.info("Saving Q-network to: {}".format(path))
                 torch.save(self.defender_q_network.state_dict(), path)
         else:
-            self.config.logger.warning("Save path not defined, not saving Q-networks to disk")
+            self.config.logger.warning("Save path not defined, not saving SAC model to disk")
 
 
     def update_state(self, attacker_obs: np.ndarray = None, defender_obs: np.ndarray = None,
@@ -761,7 +761,7 @@ class SACAgent(QAgent):
 
 
         # Zero mean
-        if self.config.dqn_config.zero_mean_features:
+        if self.config.sac_config.zero_mean_features:
             if not self.env.local_view_features() or not attacker:
                 attacker_obs_1 = attacker_obs[:, 0:-1]
             else:
@@ -803,7 +803,7 @@ class SACAgent(QAgent):
             defender_obs = np.array(zero_mean_defender_features)
 
         # Normalize
-        if self.config.dqn_config.normalize_features:
+        if self.config.sac_config.normalize_features:
             if not self.env.local_view_features() or not attacker:
                 attacker_obs_1 = attacker_obs[:, 0:-1] / np.linalg.norm(attacker_obs[:, 0:-1])
             else:
@@ -852,7 +852,7 @@ class SACAgent(QAgent):
 
         if self.env.fully_observed() or \
                 (self.env.idsgame_config.game_config.reconnaissance_actions and attacker):
-            if self.config.dqn_config.merged_ad_features:
+            if self.config.sac_config.merged_ad_features:
                 if not self.env.local_view_features() or not attacker:
                     a_pos = attacker_obs[:, -1]
                     if not self.env.idsgame_config.game_config.reconnaissance_actions:
@@ -892,10 +892,10 @@ class SACAgent(QAgent):
                     for i in range(features.shape[0]):
                         f[i] = np.append(features[i], d_bool_features[i])
                     features = f
-                if self.config.dqn_config.state_length == 1:
+                if self.config.sac_config.state_length == 1:
                     return features
                 if len(state) == 0:
-                    s = np.array([features] * self.config.dqn_config.state_length)
+                    s = np.array([features] * self.config.sac_config.state_length)
                     return s
                 state = np.append(state[1:], np.array([features]), axis=0)
                 return state
@@ -929,10 +929,10 @@ class SACAgent(QAgent):
                                       attacker_obs.shape[1] + neighbor_defense_attributes.shape[1]))
                         for i in range(f.shape[0]):
                             f[i] = np.append(attacker_obs[i], neighbor_defense_attributes[i])
-                if self.config.dqn_config.state_length == 1:
+                if self.config.sac_config.state_length == 1:
                     return f
                 if len(state) == 0:
-                    s = np.array([f] * self.config.dqn_config.state_length)
+                    s = np.array([f] * self.config.sac_config.state_length)
                     return s
                 # if not self.env.local_view_features() or not attacker:
                 #     temp = np.append(attacker_obs, defender_obs)
@@ -941,16 +941,16 @@ class SACAgent(QAgent):
                 state = np.append(state[1:], np.array([f]), axis=0)
             return state
         else:
-            if self.config.dqn_config.state_length == 1:
+            if self.config.sac_config.state_length == 1:
                 if attacker:
                     return np.array(attacker_obs)
                 else:
                     return np.array(defender_obs)
             if len(state) == 0:
                 if attacker:
-                    return np.array([attacker_obs] * self.config.dqn_config.state_length)
+                    return np.array([attacker_obs] * self.config.sac_config.state_length)
                 else:
-                    return np.array([defender_obs] * self.config.dqn_config.state_length)
+                    return np.array([defender_obs] * self.config.sac_config.state_length)
             if attacker:
                 state = np.append(state[1:], np.array([attacker_obs]), axis=0)
             else:
