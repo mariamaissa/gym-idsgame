@@ -42,7 +42,7 @@ class SACAgent(TrainAgent, ABC):
         self.eval_defender_cumulative_reward = 0
         self.outer_train = tqdm.tqdm(total=self.config.num_episodes, desc='Train Episode', position=0)
         if self.config.logger is None:
-            self.config.logger = logging.getLogger('QAgent')
+            self.config.logger = logging.getLogger('SACAgent')
         random.seed(self.config.random_seed)
         np.random.seed(self.config.random_seed)
         torch.manual_seed(self.config.random_seed)
@@ -67,7 +67,7 @@ class SACAgent(TrainAgent, ABC):
         :param defender_episode_rewards: list of defender episode rewards for the last <self.config.log_frequency> episodes
         :param episode_steps: list of episode steps for the last <self.config.log_frequency> episodes
         :param episode_avg_attacker_loss: list of episode attacker loss for the last <self.config.log_frequency> episodes
-        :param episode_avg_defender_loss: list of episode defedner loss for the last <self.config.log_frequency> episodes
+        :param episode_avg_defender_loss: list of episode defender loss for the last <self.config.log_frequency> episodes
         :param eval: boolean flag whether the metrics are logged in an evaluation context.
         :param update_stats: boolean flag whether to update stats
         :param lr: the learning rate
@@ -105,23 +105,22 @@ class SACAgent(TrainAgent, ABC):
                 hack_probability_total)
             self.outer_eval.set_description_str(log_str)
         else:
-            log_str = "[Train] episode: {:.2f} epsilon:{:.2f},avg_a_R:{:.2f},avg_d_R:{:.2f},avg_t:{:.2f},avg_h:{:.2f},acc_A_R:{:.2f}," \
+            log_str = "[Train] episode: {:.2f},avg_a_R:{:.2f},avg_d_R:{:.2f},avg_t:{:.2f},avg_h:{:.2f},acc_A_R:{:.2f}," \
                       "acc_D_R:{:.2f},A_loss:{:.6f},D_loss:{:.6f},replay_s:{},lr:{:.2E},c_h:{:.2f}".format(
-                episode, self.config.epsilon, avg_attacker_episode_rewards, avg_defender_episode_rewards,
+                episode, avg_attacker_episode_rewards, avg_defender_episode_rewards,
                 avg_episode_steps, hack_probability, attacker_cumulative_reward, defender_cumulative_reward,
                 avg_episode_attacker_loss, avg_episode_defender_loss, replay_memory_size, lr, hack_probability_total)
             self.outer_train.set_description_str(log_str)
         self.config.logger.info(log_str)
-        if update_stats and self.config.dqn_config is not None and self.config.dqn_config.tensorboard:
+        if update_stats and self.config.sac_config is not None and self.config.sac_config.tensorboard:
             self.log_tensorboard(episode, avg_attacker_episode_rewards, avg_defender_episode_rewards, avg_episode_steps,
                                  avg_episode_attacker_loss, avg_episode_defender_loss, hack_probability,
-                                 attacker_cumulative_reward, defender_cumulative_reward, self.config.epsilon, lr,
+                                 attacker_cumulative_reward, defender_cumulative_reward, lr,
                                  hack_probability_total, eval=eval)
         if update_stats:
             result.avg_episode_steps.append(avg_episode_steps)
             result.avg_attacker_episode_rewards.append(avg_attacker_episode_rewards)
             result.avg_defender_episode_rewards.append(avg_defender_episode_rewards)
-            result.epsilon_values.append(self.config.epsilon)
             result.hack_probability.append(hack_probability)
             result.cumulative_hack_probabiltiy.append(hack_probability_total)
             result.attacker_cumulative_reward.append(attacker_cumulative_reward)
@@ -133,7 +132,7 @@ class SACAgent(TrainAgent, ABC):
     def log_tensorboard(self, episode: int, avg_attacker_episode_rewards: float, avg_defender_episode_rewards: float,
                         avg_episode_steps: float, episode_avg_loss_attacker: float, episode_avg_loss_defender: float,
                         hack_probability: float, attacker_cumulative_reward: int, defender_cumulative_reward: int,
-                        epsilon: float, lr: float, cumulative_hack_probability : float, eval=False) -> None:
+                        lr: float, cumulative_hack_probability : float, eval=False) -> None:
         """
         Log metrics to tensorboard
 
@@ -146,7 +145,6 @@ class SACAgent(TrainAgent, ABC):
         :param hack_probability: the hack probability
         :param attacker_cumulative_reward: the cumulative attacker reward
         :param defender_cumulative_reward: the cumulative defender reward
-        :param epsilon: the exploration rate
         :param lr: the learning rate
         :param cumulative_hack_probability: the cumulative hack probability
         :param eval: boolean flag whether eval or not
@@ -169,18 +167,8 @@ class SACAgent(TrainAgent, ABC):
                                            attacker_cumulative_reward, episode)
         self.tensorboard_writer.add_scalar('cumulative_reward/defender/' + train_or_eval,
                                            defender_cumulative_reward, episode)
-        self.tensorboard_writer.add_scalar('epsilon', epsilon, episode)
         if not eval:
             self.tensorboard_writer.add_scalar('lr', lr, episode)
-
-    def anneal_epsilon(self) -> None:
-        """
-        Anneals the exploration rate slightly until it reaches the minimum value
-
-        :return: None
-        """
-        if self.config.epsilon > self.config.min_epsilon:
-            self.config.epsilon = self.config.epsilon*self.config.epsilon_decay
 
     @abstractmethod
     def get_action(self, s, eval=False, attacker=True) -> int:
