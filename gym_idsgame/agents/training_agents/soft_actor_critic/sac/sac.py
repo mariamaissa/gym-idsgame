@@ -28,7 +28,7 @@ class SACAgent(AbstractSACAgent):
         self.attacker_target_network = None  # TODO: @Ian delete if: using internalized target model
         self.defender_q_network = None
         self.defender_target_network = None  # TODO: @Ian delete: if: using internalized target model
-        self.loss_fn = None
+        self.loss_fn = None  # TODO: @Ian delete?
         self.attacker_optimizer = None  # TODO: @Ian delete: not necessary
         self.defender_optimizer = None  # TODO: @Ian delete: not necessary
         self.attacker_lr_decay = None   # TODO: @Ian delete: not necessary
@@ -140,19 +140,19 @@ class SACAgent(AbstractSACAgent):
         #  (2) add boolean for init NN or HDC models
         # Initialize models
         self.attacker_q_network = FNNwithLinear(self.config.sac_config.input_dim, self.config.sac_config.attacker_output_dim,
-                                                self.config.sac_config.hidden_dim,
+                                                self.config.sac_config.hidden_layer_size,
                                                 num_hidden_layers=self.config.sac_config.num_hidden_layers,
                                                 hidden_activation=self.config.sac_config.hidden_activation)
         self.attacker_target_network = FNNwithLinear(self.config.sac_config.input_dim, self.config.sac_config.attacker_output_dim,
-                                                     self.config.sac_config.hidden_dim,
+                                                     self.config.sac_config.hidden_layer_size,
                                                      num_hidden_layers=self.config.sac_config.num_hidden_layers,
                                                      hidden_activation=self.config.sac_config.hidden_activation)
         self.defender_q_network = FNNwithLinear(self.config.sac_config.input_dim, self.config.sac_config.defender_output_dim,
-                                                self.config.sac_config.hidden_dim,
+                                                self.config.sac_config.hidden_layer_size,
                                                 num_hidden_layers=self.config.sac_config.num_hidden_layers,
                                                 hidden_activation=self.config.sac_config.hidden_activation)
         self.defender_target_network = FNNwithLinear(self.config.sac_config.input_dim, self.config.sac_config.defender_output_dim,
-                                                     self.config.sac_config.hidden_dim,
+                                                     self.config.sac_config.hidden_layer_size,
                                                      num_hidden_layers=self.config.sac_config.num_hidden_layers,
                                                      hidden_activation=self.config.sac_config.hidden_activation)
 
@@ -279,9 +279,9 @@ class SACAgent(AbstractSACAgent):
         else:
             prediction = self.defender_q_network(s_1)
 
-        loss = self.loss_fn(prediction, target)
-
         # TODO: @Ian do we want to delete the below code?
+        # loss = self.loss_fn(prediction, target)
+
         # Zero gradients, perform a backward pass, and update the weights.
         # if attacker:
         #     self.attacker_optimizer.zero_grad()

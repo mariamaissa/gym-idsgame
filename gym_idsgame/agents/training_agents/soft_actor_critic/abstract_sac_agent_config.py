@@ -174,7 +174,7 @@ class AbstractSACAgentConfig:
             if self.dqn_config is not None:
                 writer.writerow(["input_dim", str(self.dqn_config.input_dim)])
                 writer.writerow(["output_dim", str(self.dqn_config.attacker_output_dim)])
-                writer.writerow(["hidden_dim", str(self.dqn_config.hidden_dim)])
+                writer.writerow(["hidden_dim", str(self.dqn_config.hidden_layer_size)])
                 writer.writerow(["replay_memory_size", str(self.dqn_config.replay_memory_size)])
                 writer.writerow(["replay_start_size", str(self.dqn_config.replay_start_size)])
                 writer.writerow(["batch_size", str(self.dqn_config.batch_size)])
@@ -210,7 +210,7 @@ class AbstractSACAgentConfig:
         if self.dqn_config is not None:
             hparams["input_dim"] = self.dqn_config.input_dim
             hparams["output_dim"] = self.dqn_config.attacker_output_dim
-            hparams["hidden_dim"] = self.dqn_config.hidden_dim
+            hparams["hidden_dim"] = self.dqn_config.hidden_layer_size
             hparams["replay_memory_size"] = self.dqn_config.replay_memory_size
             hparams["replay_start_size"] = self.dqn_config.replay_start_size
             hparams["batch_size"] = self.dqn_config.batch_size
