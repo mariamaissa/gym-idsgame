@@ -40,7 +40,7 @@ if __name__ == '__main__':
                                tensorboard=False,
                                tensorboard_dir=default_output_dir() + "/results/tensorboard/",
                                lr_exp_decay=False,
-                               lr_decay_rate=0.9999)
+                               lr_decay_rate=0.9999) #TODO: remove
 #AbstractQHDAgentConfig
         sac_agent_config = SACAgentConfig(gamma=0.999,
                                       lr=0.00001,  # TODO: Hyper-parameter for fine-tuning
@@ -64,7 +64,7 @@ if __name__ == '__main__':
                                       save_dir=default_output_dir() + "/results/data/" + scenario + "/",
                                       attacker=attacker,
                                       defender=not attacker,
-                                      qhd_config=qhd_config,
+                                      qhd_config=sac_config,
                                       checkpoint_freq=300000)
 
         # Set up environment
