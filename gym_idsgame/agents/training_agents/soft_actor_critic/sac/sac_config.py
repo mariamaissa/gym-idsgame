@@ -11,7 +11,6 @@ class SACConfig:
 
     def __init__(self,
                  input_dim: int,  # TODO @Ian: do we need this?
-                 output_dim: int,  # TODO @Ian: do we need this?
                  attacker_output_dim: int = 33,
                  hidden_layer_size: int = 64,
                  replay_memory_size: int = 100000,
@@ -57,7 +56,6 @@ class SACConfig:
         :param zero_mean_features: boolean flag whether features should be converted to zero-mean vectors
         """
         self.input_dim = input_dim
-        self.output_dim = output_dim
         self.hidden_layer_size = hidden_layer_size
         self.attacker_output_dim = attacker_output_dim
         self.defender_output_dim = defender_output_dim
