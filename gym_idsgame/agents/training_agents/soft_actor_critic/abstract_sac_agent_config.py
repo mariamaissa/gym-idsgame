@@ -1,5 +1,5 @@
 """
-Configuration for QAgent
+Configuration for AbstractSACAgent
 """
 import csv
 from gym_idsgame.agents.training_agents.soft_actor_critic.sac.sac_config import SACConfig
@@ -12,59 +12,70 @@ class AbstractSACAgentConfig:
     """
 
     def __init__(self,
-                 input_size: int,
-                 output_size: int,
-                 hidden_size: int,
-                 policy_lr: float,
-                 critic_lr: float,
-                 alpha_lr: float,
-                 discount: float,
-                 tau: float,
-                 alpha_scale: float,
-                 target_update: int,  # When the target should update
-                 update_frequency: int,  # When the models should update,
-                 # summary_writer: SummaryWriter,
-
-                 gamma :float = 0.8,
-                 alpha:float = 0.1,
-                 epsilon :float =0.9,
-                 render :bool =False,
-                 eval_sleep :float = 0.35,
-                 epsilon_decay :float = 0.999,
-                 min_epsilon :float = 0.1,
-
-                 eval_episodes :int = 1,
-                 train_log_frequency :int =100,
-                 eval_log_frequency :int =1,
-                 video :bool = False,
-                 video_fps :int = 5,
-                 video_dir :bool = None,
-                 num_episodes :int = 5000,
-                 eval_render :bool = False,
-                 gifs :bool = False,
+                 hidden_size: int = 256, #TODO: this is a redundant param with SACConfig (hidden_layer_size, need to consolidate
+                 policy_lr: float = 3e-4,
+                 critic_lr: float = 3e-4,
+                 alpha_lr: float = 3e-4,
+                 discount: float = .99,
+                 tau: float = .005,
+                 alpha_scale: float = .89,
+                 target_update: int = 1,  # When the target should update
+                 update_frequency: int = 1,  # When the models should update,
+                 explore_steps: int = 0,
+                 buffer_size: int = 10 ** 6,
+                 sample_size: int = 64,
+                 max_steps: int = 1e5,
+                 hdc_agent: bool = False,  # TODO: @Ian added this to differentiate between models (but change if needed)
+                 hypervec_dim: int = 2048,
+                 # gamma :float = 0.8,
+                 # alpha:float = 0.1,
+                 # epsilon :float = 0.9,
+                 render: bool = False,
+                 eval_sleep: float = 0.35,
+                 # epsilon_decay :float = 0.999,
+                 # min_epsilon :float = 0.1,
+                 eval_episodes: int = 1,
+                 train_log_frequency: int = 100,
+                 eval_log_frequency: int = 1,
+                 video: bool = False,
+                 video_fps: int = 5,
+                 video_dir: bool = None,
+                 num_episodes: int = 5000,
+                 eval_render: bool = False,
+                 gifs: bool = False,
                  gif_dir: str = None,
-                 eval_frequency :int =1000,
-                 video_frequency :int = 101,
-                 attacker :bool = True,
-                 defender :bool = False,
-                 save_dir :str = None,
-                 attacker_load_path : str = None,
-                 defender_load_path : str = None,
-                 sac_config: SACConfig = None, # Changed from from DQNConfig
-                 checkpoint_freq : int = 100000,
+                 eval_frequency: int = 1000,
+                 video_frequency: int = 101,
+                 attacker: bool = True,
+                 defender: bool = False,
+                 save_dir: str = None,
+                 attacker_load_path: str = None,
+                 defender_load_path: str = None,
+                 sac_config: SACConfig = None,  # Changed from  DQNConfig
+                 checkpoint_freq: int = 100000,
                  random_seed: int = 0,
-                 eval_epsilon : float = 0.0,
-                 tab_full_state_space : bool = False):
+                 # eval_epsilon : float = 0.0,
+                 tab_full_state_space: bool = False):
         """
         Initialize environment and hyperparameters
 
-        :param gamma: the discount factor
-        :param alpha: the learning rate
-        :param epsilon: the exploration rate
+        :param hidden_size: specifies the hidden layer size
+        :param policy_lr: Policy (Actor) learning rate
+        :param critic_lr: Critic learning rate
+        :param alpha_lr: Temperature learning rate
+        :param discount: 
+        :param tau:
+        :param alpha_scale:
+        :param target_update:
+        :param update_frequency:
+        :param explore_steps:
+        :param buffer_size:
+        :param sample_size:
+        :param max_steps:
+        :param hdc_agent: determine which model to use
+        :param hypervec_dim: the HDC hypervector size
         :param render: whether to render the environment *during training*
         :param eval_sleep: amount of sleep between time-steps during evaluation and rendering
-        :param epsilon_decay: rate of decay of epsilon
-        :param min_epsilon: minimum epsilon rate
         :param eval_episodes: number of evaluation episodes
         :param train_log_frequency: number of episodes between logs during train
         :param eval_log_frequency: number of episodes between logs during eval
@@ -82,20 +93,29 @@ class AbstractSACAgentConfig:
         :param save_dir: dir to save Q-table
         :param attacker_load_path: path to load a saved Q-table of the attacker
         :param defender_load_path: path to load a saved Q-table of the defender
-        :param dqn_config: configuration for DQN
+        :param sac_config: configuration for SAC
         :param checkpoint_freq: frequency of checkpointing the model (episodes)
         :param random_seed: the random seed for reproducibility
-        :param eval_epsilon: evaluation epsilon for implementing a "soft policy" rather than a "greedy policy"
         :param tab_full_state_space: a boolean flag indicating whether the tabular q learning approach use full
                                      state space or not
         """
-        self.gamma = gamma
-        self.alpha = alpha
-        self.epsilon = epsilon
+        self.hidden_size = hidden_size
+        self.policy_lr = policy_lr
+        self.critic_lr = critic_lr
+        self.alpha_lr = alpha_lr
+        self.discount = discount
+        self.tau = tau
+        self.alpha_scale = alpha_scale
+        self.target_update = target_update
+        self.update_frequency = update_frequency
+        self.explore_steps = explore_steps
+        self.buffer_size = buffer_size
+        self.sample_size = sample_size
+        self.max_steps = max_steps
+        self.hdc_agent = hdc_agent
+        self.hypervec_dim = hypervec_dim
         self.render = render
         self.eval_sleep = eval_sleep
-        self.epsilon_decay = epsilon_decay
-        self.min_epsilon = min_epsilon
         self.eval_episodes = eval_episodes
         self.train_log_frequency = train_log_frequency
         self.eval_log_frequency = eval_log_frequency
@@ -117,24 +137,26 @@ class AbstractSACAgentConfig:
         self.sac_config = sac_config
         self.checkpoint_freq = checkpoint_freq
         self.random_seed = random_seed
-        self.eval_epsilon = eval_epsilon
         self.tab_full_state_space = tab_full_state_space
 
     def to_str(self) -> str:
         """
         :return: a string with information about all of the parameters
         """
-        return "Hyperparameters: gamma:{0},alpha:{1},epsilon:{2},render:{3},eval_sleep:{4}," \
-               "epsilon_decay:{5},min_epsilon:{6},eval_episodes:{7},train_log_frequency:{8}," \
-               "eval_log_frequency:{9},video:{10},video_fps:{11}," \
-               "video_dir:{12},num_episodes:{13},eval_render:{14},gifs:{15}," \
-               "gifdir:{16},eval_frequency:{17},video_frequency:{18},attacker{19},defender:{20}," \
-               "checkpoint_freq:{21},random_seed:{22},eval_epsilon:{23},tab_full_state_space:{24}".format(
-            self.gamma, self.alpha, self.epsilon, self.render, self.eval_sleep, self.epsilon_decay,
-            self.min_epsilon, self.eval_episodes, self.train_log_frequency, self.eval_log_frequency, self.video,
-            self.video_fps, self.video_dir, self.num_episodes, self.eval_render, self.gifs, self.gif_dir,
-            self.eval_frequency, self.video_frequency, self.attacker, self.defender, self.checkpoint_freq,
-            self.random_seed, self.eval_epsilon, self.tab_full_state_space)
+        return "Hyperparameters: hidden_size:{0},policy_lr:{1},critic_lr:{2},alpha_lr:{3}, discount:{4}, tau:{5},"  \
+               "alpha_scale:{6},target_update:{7},update_frequency:{8},explore_steps:{9},buffer_size:{10},"  \
+               "sample_size:{11},max_steps:{12},hdc_agent:{13},hypervec_dim:{14},render:{15},eval_sleep:{16},"  \
+               "eval_episodes:{17},train_log_frequency:{18},eval_log_frequency:{19},video:{20},video_fps:{21},"  \
+               "video_dir:{22},num_episodes:{23},eval_render:{24},gifs:{25},gifdir:{26},eval_frequency:{27},"  \
+               "video_frequency:{28},attacker{29},defender:{30},checkpoint_freq:{31},random_seed:{32},"  \
+               "tab_full_state_space:{33}".format(
+            self.hidden_size, self.policy_lr, self.critic_lr, self.alpha_lr, self.discount, self.tau,
+            self.alpha_scale, self.target_update, self.update_frequency, self.explore_steps, self.buffer_size,
+            self.sample_size, self.max_steps, self.hdc_agent, self.hypervec_dim, self.render, self.eval_sleep,
+            self.eval_episodes, self.train_log_frequency, self.eval_log_frequency, self.video, self.video_fps,
+            self.video_dir, self.num_episodes, self.eval_render, self.gifs, self.gif_dir, self.eval_frequency,
+            self.video_frequency, self.attacker, self.defender, self.checkpoint_freq, self.random_seed,
+            self.tab_full_state_space)
 
     def to_csv(self, file_path: str) -> None:
         """
@@ -146,13 +168,23 @@ class AbstractSACAgentConfig:
         with open(file_path, "w") as f:
             writer = csv.writer(f)
             writer.writerow(["parameter", "value"])
-            writer.writerow(["gamma", str(self.gamma)])
-            writer.writerow(["alpha", str(self.alpha)])
-            writer.writerow(["epsilon", str(self.epsilon)])
+            writer.writerow(["hidden_size", str(self.hidden_size)])
+            writer.writerow(["policy_lr", str(self.policy_lr)])
+            writer.writerow(["critic_lr", str(self.critic_lr)])
+            writer.writerow(["alpha_lr", str(self.alpha_lr)])
+            writer.writerow(["discount", str(self.discount)])
+            writer.writerow(["tau", str(self.tau)])
+            writer.writerow(["alpha_scale", str(self.alpha_scale)])
+            writer.writerow(["target_update", str(self.target_update)])
+            writer.writerow(["update_frequency", str(self.update_frequency)])
+            writer.writerow(["explore_steps", str(self.explore_steps)])
+            writer.writerow(["buffer_size", str(self.buffer_size)])
+            writer.writerow(["sample_size", str(self.sample_size)])
+            writer.writerow(["max_steps", str(self.max_steps)])
+            writer.writerow(["hdc_agent", str(self.hdc_agent)])
+            writer.writerow(["hypervec_dim", str(self.hypervec_dim)])
             writer.writerow(["render", str(self.render)])
             writer.writerow(["eval_sleep", str(self.eval_sleep)])
-            writer.writerow(["epsilon_decay", str(self.epsilon_decay)])
-            writer.writerow(["min_epsilon", str(self.min_epsilon)])
             writer.writerow(["eval_episodes", str(self.eval_episodes)])
             writer.writerow(["train_log_frequency", str(self.train_log_frequency)])
             writer.writerow(["eval_log_frequency", str(self.eval_log_frequency)])
@@ -169,33 +201,42 @@ class AbstractSACAgentConfig:
             writer.writerow(["defender", str(self.defender)])
             writer.writerow(["checkpoint_freq", str(self.checkpoint_freq)])
             writer.writerow(["random_seed", str(self.random_seed)])
-            writer.writerow(["eval_epsilon", str(self.eval_epsilon)])
             writer.writerow(["tab_full_state_space", str(self.tab_full_state_space)])
-            if self.dqn_config is not None:
-                writer.writerow(["input_dim", str(self.dqn_config.input_dim)])
-                writer.writerow(["output_dim", str(self.dqn_config.attacker_output_dim)])
-                writer.writerow(["hidden_dim", str(self.dqn_config.hidden_layer_size)])
-                writer.writerow(["replay_memory_size", str(self.dqn_config.replay_memory_size)])
-                writer.writerow(["replay_start_size", str(self.dqn_config.replay_start_size)])
-                writer.writerow(["batch_size", str(self.dqn_config.batch_size)])
-                writer.writerow(["target_network_update_freq", str(self.dqn_config.target_network_update_freq)])
-                writer.writerow(["gpu", str(self.dqn_config.gpu)])
-                writer.writerow(["tensorboard", str(self.dqn_config.tensorboard)])
-                writer.writerow(["tensorboard_dir", str(self.dqn_config.tensorboard_dir)])
-                writer.writerow(["loss_fn", str(self.dqn_config.loss_fn)])
-                writer.writerow(["optimizer", str(self.dqn_config.optimizer)])
-                writer.writerow(["num_hidden_layers", str(self.dqn_config.num_hidden_layers)])
-                writer.writerow(["lr_exp_decay", str(self.dqn_config.lr_exp_decay)])
-                writer.writerow(["lr_decay_rate", str(self.dqn_config.lr_decay_rate)])
-                writer.writerow(["hidden_activation", str(self.dqn_config.hidden_activation)])
+            # TODO: @Mariam: review what Ian says with SACConfig comments
+            if self.sac_config is not None:
+                writer.writerow(["input_dim", str(self.sac_config.input_dim)])
+                writer.writerow(["output_dim", str(self.sac_config.attacker_output_dim)])
+                writer.writerow(["hidden_layer_size", str(self.sac_config.hidden_layer_size)])
+                writer.writerow(["replay_memory_size", str(self.sac_config.replay_memory_size)])
+                writer.writerow(["replay_start_size", str(self.sac_config.replay_start_size)])
+                writer.writerow(["batch_size", str(self.sac_config.batch_size)])
+                # writer.writerow(["target_network_update_freq", str(self.sac_config.target_network_update_freq)])
+                writer.writerow(["gpu", str(self.sac_config.gpu)])
+                writer.writerow(["tensorboard", str(self.sac_config.tensorboard)])
+                writer.writerow(["tensorboard_dir", str(self.sac_config.tensorboard_dir)])
+                # writer.writerow(["loss_fn", str(self.sac_config.loss_fn)])
+                # writer.writerow(["optimizer", str(self.sac_config.optimizer)])
+                writer.writerow(["num_hidden_layers", str(self.sac_config.num_hidden_layers)])
+                # writer.writerow(["lr_exp_decay", str(self.sac_config.lr_exp_decay)])
+                # writer.writerow(["lr_decay_rate", str(self.sac_config.lr_decay_rate)])
+                # writer.writerow(["hidden_activation", str(self.sac_config.hidden_activation)])
 
     def hparams_dict(self):
         hparams = {}
-        hparams["gamma"] = self.gamma
-        hparams["alpha"] = self.alpha
-        hparams["epsilon"] = self.epsilon
-        hparams["epsilon_decay"] = self.epsilon_decay
-        hparams["min_epsilon"] = self.min_epsilon
+        hparams["hidden_size"] = self.hidden_size
+        hparams["policy_lr"] = self.policy_lr
+        hparams["critic_lr"] = self.critic_lr
+        hparams["alpha_lr"] = self.alpha_lr
+        hparams["discount"] = self.discount
+        hparams["tau"] = self.tau
+        hparams["alpha_scale"] = self.alpha_scale
+        hparams["target_update"] = self.target_update
+        hparams["update_frequency"] = self.update_frequency
+        hparams["buffer_size"] = self.buffer_size
+        hparams["sample_size"] = self.sample_size
+        hparams["max_steps"] = self.max_steps
+        hparams["hdc_agent"] = self.hdc_agent
+        hparams["hypervec_dim"] = self.hypervec_dim
         hparams["eval_episodes"] = self.eval_episodes
         hparams["train_log_frequency"] = self.train_log_frequency
         hparams["eval_log_frequency"] = self.eval_log_frequency
@@ -205,21 +246,21 @@ class AbstractSACAgentConfig:
         hparams["defender"] = self.defender
         hparams["checkpoint_freq"] = self.checkpoint_freq
         hparams["random_seed"] = self.random_seed
-        hparams["eval_epsilon"] = self.eval_epsilon
         hparams["tab_full_state_space"] = self.tab_full_state_space
-        if self.dqn_config is not None:
-            hparams["input_dim"] = self.dqn_config.input_dim
-            hparams["output_dim"] = self.dqn_config.attacker_output_dim
-            hparams["hidden_dim"] = self.dqn_config.hidden_layer_size
-            hparams["replay_memory_size"] = self.dqn_config.replay_memory_size
-            hparams["replay_start_size"] = self.dqn_config.replay_start_size
-            hparams["batch_size"] = self.dqn_config.batch_size
-            hparams["num_hidden_layers"] = self.dqn_config.num_hidden_layers
-            hparams["target_network_update_freq"] = self.dqn_config.target_network_update_freq
-            hparams["gpu"] = self.dqn_config.gpu
-            hparams["loss_fn"] = self.dqn_config.loss_fn
-            hparams["optimizer"] = self.dqn_config.optimizer
-            hparams["lr_exp_decay"] = self.dqn_config.lr_exp_decay
-            hparams["lr_decay_rate"] = self.dqn_config.lr_decay_rate
-            hparams["hidden_activation"] = self.dqn_config.hidden_activation
+        # TODO: @Mariam: review what Ian says with SACConfig comments
+        if self.sac_config is not None:
+            hparams["input_dim"] = self.sac_config.input_dim
+            hparams["output_dim"] = self.sac_config.attacker_output_dim
+            hparams["hidden_layer_size"] = self.sac_config.hidden_layer_size
+            hparams["replay_memory_size"] = self.sac_config.replay_memory_size
+            hparams["replay_start_size"] = self.sac_config.replay_start_size
+            hparams["batch_size"] = self.sac_config.batch_size
+            hparams["num_hidden_layers"] = self.sac_config.num_hidden_layers
+            # hparams["target_network_update_freq"] = self.sac_config.target_network_update_freq
+            hparams["gpu"] = self.sac_config.gpu
+            # hparams["loss_fn"] = self.sac_config.loss_fn
+            hparams["optimizer"] = self.sac_config.optimizer
+            # hparams["lr_exp_decay"] = self.sac_config.lr_exp_decay
+            # hparams["lr_decay_rate"] = self.sac_config.lr_decay_rate
+            # hparams["hidden_activation"] = self.sac_config.hidden_activation
         return hparams
