@@ -16,7 +16,7 @@ class AbstractSACAgent(TrainAgent, ABC):
     """
     Abstract SACAgent
     """
-    def __init__(self, env:IdsGameEnv, config: SACAgentConfig):
+    def __init__(self, env:IdsGameEnv, config: AbstractSACAgentConfig):
         """
         Initialize environment and hyperparameters
 
@@ -46,6 +46,9 @@ class AbstractSACAgent(TrainAgent, ABC):
         random.seed(self.config.random_seed)
         np.random.seed(self.config.random_seed)
         torch.manual_seed(self.config.random_seed)
+        
+        self.buffer = None
+        self.tensorboard_writer = None
 
     def log_metrics(self,
                     episode: int,
@@ -103,7 +106,7 @@ class AbstractSACAgent(TrainAgent, ABC):
                 episode, avg_attacker_episode_rewards, avg_defender_episode_rewards, avg_episode_steps, hack_probability,
                 attacker_cumulative_reward, defender_cumulative_reward, replay_memory_size, lr,
                 hack_probability_total)
-            self.outer_eval.set_description_str(log_str)
+            self.outer_eval.set_description_str(log_str) #What is going to be done about this?
         else:
             log_str = "[Train] episode: {:.2f},avg_a_R:{:.2f},avg_d_R:{:.2f},avg_t:{:.2f},avg_h:{:.2f},acc_A_R:{:.2f}," \
                       "acc_D_R:{:.2f},A_loss:{:.6f},D_loss:{:.6f},replay_s:{},lr:{:.2E},c_h:{:.2f}".format(
