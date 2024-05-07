@@ -399,6 +399,7 @@ class SACAgent(AbstractSACAgent):
         :param log: whether to log the result
         :return: None
         """
+        raise ValueError('I am not supposed to be here')
         self.config.logger.info("Starting Evaluation")
         time_str = str(time.time())
 
@@ -556,11 +557,11 @@ class SACAgent(AbstractSACAgent):
             if self.config.attacker:
                 path = self.config.save_dir + "/" + time_str + "_attacker_q_network.pt"
                 self.config.logger.info("Saving SAC model to: {}".format(path))
-                torch.save(self.attacker.state_dict(), path)
+                self.attacker.save_actor(extra_info=path)
             if self.config.defender:
                 path = self.config.save_dir + "/" + time_str + "_defender_q_network.pt"
                 self.config.logger.info("Saving Q-network to: {}".format(path))
-                torch.save(self.defender.state_dict(), path)
+                self.defender.save_actor(extra_info=path)
         else:
             self.config.logger.warning("Save path not defined, not saving SAC model to disk")
 

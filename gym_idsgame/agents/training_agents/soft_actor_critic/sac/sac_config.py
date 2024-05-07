@@ -10,22 +10,15 @@ class SACConfig:
     """
 
     def __init__(self,
-                 input_dim: int,  # TODO @Ian: do we need this?
+                 input_dim: int,
                  attacker_output_dim: int = 33,
                  hidden_layer_size: int = 64,
                  replay_memory_size: int = 100000,
                  replay_start_size: int = 10000,
                  batch_size: int = 64,
-                 num_hidden_layers=2,           # TODO @Ian: do we need this?
-                 # target_network_update_freq: int = 10, # TODO @Ian:do you want to inclde this in your model interface?
                  gpu: bool = False,
                  tensorboard: bool = False,
                  tensorboard_dir: str = "",
-                 # loss_fn: str = "MSE",        # TODO: @Ian delete?
-                 # optimizer: str = "Adam",     # TODO: @Ian delete?
-                 # lr_exp_decay,                # TODO: @Ian delete?
-                 # lr_decay_rate,               # TODO: @Ian delete?
-                 # hidden_activation: str = "ReLU",  # TODO: @Ian delete?
                  defender_output_dim: int = 33,
                  state_length=1,
                  merged_ad_features: bool = False,
@@ -62,16 +55,9 @@ class SACConfig:
         self.replay_memory_size = replay_memory_size
         self.replay_start_size = replay_start_size
         self.batch_size = batch_size
-        # self.target_network_update_freq = target_network_update_freq
         self.gpu = gpu
         self.tensorboard = tensorboard
         self.tensorboard_dir = tensorboard_dir
-        # self.loss_fn = loss_fn
-        # self.optimizer = optimizer
-        self.num_hidden_layers = num_hidden_layers
-        # self.lr_exp_decay = lr_exp_decay
-        # self.lr_decay_rate = lr_decay_rate
-        # self.hidden_activation = hidden_activation
         self.state_length = state_length
         self.merged_ad_features = merged_ad_features
         self.normalize_features = normalize_features
@@ -100,7 +86,7 @@ class SACConfig:
             self.tensorboard_dir,
             None, #self.loss_fn,
             None, #self.optimizer,
-            self.num_hidden_layers,
+            None, #self.num_hidden_layers,
             None, #self.lr_exp_decay,
             None, #self.lr_decay_rate,
             None, #self.hidden_activation,
@@ -133,7 +119,7 @@ class SACConfig:
             writer.writerow(["tensorboard_dir", str(self.tensorboard_dir)])
             # writer.writerow(["loss_fn", str(self.loss_fn)])
             # writer.writerow(["optimizer", str(self.optimizer)])
-            writer.writerow(["num_hidden_layers", str(self.num_hidden_layers)])
+            #writer.writerow(["num_hidden_layers", str(self.num_hidden_layers)])
             # writer.writerow(["lr_exp_decay", str(self.lr_exp_decay)])
             # writer.writerow(["lr_decay_rate", str(self.lr_decay_rate)])
             # writer.writerow(["hidden_activation", str(self.hidden_activation)])

@@ -12,7 +12,6 @@ class AbstractSACAgentConfig:
     """
 
     def __init__(self,
-                 hidden_size: int = 256, #TODO: this is a redundant param with SACConfig (hidden_layer_size, need to consolidate
                  policy_lr: float = 3e-4,
                  critic_lr: float = 3e-4,
                  alpha_lr: float = 3e-4,
@@ -27,13 +26,8 @@ class AbstractSACAgentConfig:
                  max_steps: int = 1e5,
                  hdc_agent: bool = False,  # TODO: @Ian added this to differentiate between models (but change if needed)
                  hypervec_dim: int = 2048,
-                 # gamma :float = 0.8,
-                 # alpha:float = 0.1,
-                 # epsilon :float = 0.9,
                  render: bool = False,
                  eval_sleep: float = 0.35,
-                 # epsilon_decay :float = 0.999,
-                 # min_epsilon :float = 0.1,
                  eval_episodes: int = 1,
                  train_log_frequency: int = 100,
                  eval_log_frequency: int = 1,
@@ -54,7 +48,6 @@ class AbstractSACAgentConfig:
                  sac_config: SACConfig = None,  # Changed from  DQNConfig
                  checkpoint_freq: int = 100000,
                  random_seed: int = 0,
-                 # eval_epsilon : float = 0.0,
                  tab_full_state_space: bool = False):
         """
         Initialize environment and hyperparameters
