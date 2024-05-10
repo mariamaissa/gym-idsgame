@@ -31,18 +31,30 @@ if __name__ == '__main__':
 
 
     sac_config = SACConfig(input_dim=88,
-                           defender_output_dim=88,  # attacker would need 80: 10 attacks (+1 for defender), 8 nodes
+    # TODO: @Ian: you can uncomment parameters if you want to fine-tune
+                           # policy_lr= 3e-4,
+                           # critic_lr = 3e-4,
+                           # alpha_lr= 3e-4,
+                           # discount = .99,
+                           # tau = .005,
+                           # alpha_scale = .89,
+                           # target_update = 1,
+                           # update_frequency = 1,
+                           # explore_steps = 0,
+                           # buffer_size = 10 ** 6,
+                           # sample_size = 64,
+                           # max_steps = 1e5,
+                           # hypervec_dim = 2048,
+                           defender_output_dim=88,
                            attacker_output_dim=80,
                            replay_memory_size=10000,
                            batch_size=32,
-                           # target_network_update_freq=1000,  # TODO: Hyperparameter for fine-tuning
                            gpu=False,
                            tensorboard=False,
                            tensorboard_dir=default_output_dir() + "/results/tensorboard/",
-                           ) #TODO: @Ian: you can add `hidden_layer_size`, `num_hidden_layers` if you want to fine-tune
+                           )
 #AbstractQHDAgentConfig
     sac_agent_config = AbstractSACAgentConfig(
-                                 # TODO: @Ian: you can add parameters if you want to fine-tune
                                   eval_sleep=0.9,
                                   eval_frequency=1000,
                                   eval_episodes=100,
