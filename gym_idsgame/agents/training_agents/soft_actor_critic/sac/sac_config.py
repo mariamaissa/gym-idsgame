@@ -27,7 +27,6 @@ class SACConfig:
                  attacker_output_dim: int = 33,
                  hidden_layer_size: int = 64,
                  replay_memory_size: int = 100000,
-                 replay_start_size: int = 10000,
                  batch_size: int = 64,
                  gpu: bool = False,
                  tensorboard: bool = False,
@@ -36,7 +35,8 @@ class SACConfig:
                  state_length=1,
                  merged_ad_features: bool = False,
                  normalize_features: bool = False,
-                 zero_mean_features: bool = False):
+                 zero_mean_features: bool = False,
+                 hdc_agent : bool = False):
         """
         Initializes the config
 
@@ -79,7 +79,6 @@ class SACConfig:
         self.alpha_scale = alpha_scale
         self.target_update = target_update
         self.update_frequency = update_frequency
-        self.explore_steps = explore_steps
         self.buffer_size = buffer_size
         self.sample_size = sample_size
         self.max_steps = max_steps
@@ -88,7 +87,7 @@ class SACConfig:
         self.attacker_output_dim = attacker_output_dim
         self.defender_output_dim = defender_output_dim
         self.replay_memory_size = replay_memory_size
-        self.replay_start_size = replay_start_size
+        self.replay_start_size = explore_steps
         self.batch_size = batch_size
         self.gpu = gpu
         self.tensorboard = tensorboard
@@ -97,19 +96,20 @@ class SACConfig:
         self.merged_ad_features = merged_ad_features
         self.normalize_features = normalize_features
         self.zero_mean_features = zero_mean_features
+        self.hdc_agent = hdc_agent
 
     def to_str(self) -> str:
         """
         :return: a string with information about all of the parameters
         """
         return "SAC Hyperparameters: input_dim:{0},policy_lr:{1},critic_lr:{2},alpha_lr:{3}, discount:{4}, tau:{5},"  \
-               "alpha_scale:{6},target_update:{7},update_frequency:{8},explore_steps:{9},buffer_size:{10},"  \
+               "alpha_scale:{6},target_update:{7},update_frequency:{8},hdc_agent:{9},buffer_size:{10},"  \
                "sample_size:{11},max_steps:{12},hypervec_dim:{13}, attacker_output_dim:{14},hidden_layer_size:{15}," \
                "replay_memory_size:{16},""replay_start_size:{17}, batch_size:{18}, gpu:{19},tensorboard:{20}," \
                "tensorboard_dir:{21},defender_output_dim:{22}, state_length:{23},merged_ad_features:{24}," \
                "normalize_features:{25},zero_mean_features:{26}".format(
             self.input_dim, self.policy_lr, self.critic_lr, self.alpha_lr, self.discount, self.tau,
-            self.alpha_scale, self.target_update, self.update_frequency, self.explore_steps, self.buffer_size,
+            self.alpha_scale, self.target_update, self.update_frequency, self.hdc_agent, self.buffer_size,
             self.sample_size, self.max_steps, self.hypervec_dim, self.attacker_output_dim, self.hidden_layer_size,
             self.replay_memory_size, self.replay_start_size, self.batch_size, self.gpu, self.tensorboard,
             self.tensorboard_dir, self.defender_output_dim, self.state_length, self.merged_ad_features,
@@ -134,7 +134,6 @@ class SACConfig:
             writer.writerow(["alpha_scale", str(self.alpha_scale)])
             writer.writerow(["target_update", str(self.target_update)])
             writer.writerow(["update_frequency", str(self.update_frequency)])
-            writer.writerow(["explore_steps", str(self.explore_steps)])
             writer.writerow(["buffer_size", str(self.buffer_size)])
             writer.writerow(["sample_size", str(self.sample_size)])
             writer.writerow(["max_steps", str(self.max_steps)])
@@ -152,3 +151,4 @@ class SACConfig:
             writer.writerow(["merged_ad_features", str(self.merged_ad_features)])
             writer.writerow(["normalize_features", str(self.normalize_features)])
             writer.writerow(["zero_mean_features", str(self.zero_mean_features)])
+            writer.writerow(["hdc_agent", str(self.hdc_agent)])

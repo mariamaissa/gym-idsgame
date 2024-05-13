@@ -1,5 +1,5 @@
 import os
-import gym
+import gymnasium as gym
 import time
 import sys
 # from gym_idsgame.agents.training_agents.q_learning.abstract_qhd_agent_config import AbstractQHDAgentConfig
@@ -24,22 +24,24 @@ def default_output_dir() -> str:
 
 # Program entrypoint
 if __name__ == '__main__':
-    scenario = str(sys.argv[1])
+    scenario = "minimal_defense" #str(sys.argv[1])
     attacker = True if scenario == "minimal_defense" or scenario == "random_defense" else False
 
     random_seed = 0
     util.create_artefact_dirs('./', random_seed)
 
     for lr in [0.00001]:
-        hdc_sac_config = SACConfig(33)
+        hdc_sac_config = SACConfig(88,
+                           defender_output_dim=88,
+                           attacker_output_dim=80)
 
-        qhd_agent_config = AbstractSACAgentConfig(sac_config=hdc_sac_config)
+        sac_config = AbstractSACAgentConfig(sac_config=hdc_sac_config, num_episodes=3)
 
         # Set up environment
         env_name = "idsgame-" + scenario + "-v3"
-        env = gym.make(env_name, save_dir=default_output_dir() + "/results/data/" + scenario + "/")
+        env = gym.make("idsgame-maximal_attack-v3", save_dir=default_output_dir() + "/results/data/" + scenario + "/")
 
-        agent = SACConfig(env, qhd_agent_config)
+        agent = SACAgent(env, sac_config)
         start = time.time()
         agent.train()
         print("*********Time to train*********: ", time.time() - start)

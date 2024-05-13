@@ -92,7 +92,7 @@ class AbstractSACAgentConfig:
         """
         :return: a string with information about all of the parameters
         """
-        return "Hyperparameters: render:{0},eval_sleep:{1},eval_episodes:{2},train_log_frequency:{3}," \ 
+        return "Hyperparameters: render:{0},eval_sleep:{1},eval_episodes:{2},train_log_frequency:{3}," \
                "eval_log_frequency:{4},video:{5},video_fps:{6},video_dir:{7},num_episodes:{8},eval_render:{9}," \
                "gifs:{10},gifdir:{11},eval_frequency:{12},video_frequency:{13},attacker{14},defender:{15}," \
                "checkpoint_freq:{16},random_seed:{17},tab_full_state_space:{18}".format(
@@ -153,7 +153,6 @@ class AbstractSACAgentConfig:
                 writer.writerow(["gpu", str(self.sac_config.gpu)])
                 writer.writerow(["tensorboard", str(self.sac_config.tensorboard)])
                 writer.writerow(["tensorboard_dir", str(self.sac_config.tensorboard_dir)])
-                writer.writerow(["num_hidden_layers", str(self.sac_config.num_hidden_layers)])
 
     def hparams_dict(self):
         hparams = {}
@@ -187,7 +186,5 @@ class AbstractSACAgentConfig:
             hparams["replay_memory_size"] = self.sac_config.replay_memory_size
             hparams["replay_start_size"] = self.sac_config.replay_start_size
             hparams["batch_size"] = self.sac_config.batch_size
-            hparams["num_hidden_layers"] = self.sac_config.num_hidden_layers
             hparams["gpu"] = self.sac_config.gpu
-            hparams["optimizer"] = self.sac_config.optimizer
         return hparams

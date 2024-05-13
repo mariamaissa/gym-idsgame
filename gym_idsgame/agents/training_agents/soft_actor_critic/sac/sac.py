@@ -29,7 +29,7 @@ class SACAgent(AbstractSACAgent):
         self.attacker = None
         self.defender = None
         self.tensorboard_writer = SummaryWriter(self.config.sac_config.tensorboard_dir)
-        self.attacker_buffer = MemoryBuffer(config.sac_config.replay_memory_size, config.sample_size)
+        self.attacker_buffer = MemoryBuffer(config.sac_config.replay_memory_size, config.sac_config.sample_size)
         self.defender_buffer = deepcopy(self.attacker_buffer) #In case of future buffer where they need to share exact attributes
         
         #We figure this out here so we can use device when we are making transitions
@@ -132,19 +132,19 @@ class SACAgent(AbstractSACAgent):
         input_dict = {
                 'input_size' : self.config.sac_config.input_dim,
                 'output_size' : self.config.sac_config.attacker_output_dim,
-                'policy_lr' : self.config.policy_lr,
-                'critic_lr' : self.config.critic_lr,
-                'alpha_lr' : self.config.alpha_lr,
-                'discount' : self.config.discount,
-                'tau' : self.config.tau,
-                'alpha_scale' : self.config.alpha_scale,
-                'target_update' : self.config.target_update,
-                'update_frequency' : self.config.update_frequency,
+                'policy_lr' : self.config.sac_config.policy_lr,
+                'critic_lr' : self.config.sac_config.critic_lr,
+                'alpha_lr' : self.config.sac_config.alpha_lr,
+                'discount' : self.config.sac_config.discount,
+                'tau' : self.config.sac_config.tau,
+                'alpha_scale' : self.config.sac_config.alpha_scale,
+                'target_update' : self.config.sac_config.target_update,
+                'update_frequency' : self.config.sac_config.update_frequency,
                 'summary_writer' : self.tensorboard_writer
             }
         
-        if self.config.hdc_agent:
-            input_dict['hyper_dim'] = self.config.hypervec_dim
+        if self.config.sac_config.hdc_agent:
+            input_dict['hyper_dim'] = self.config.sac_config.hypervec_dim
             self.attacker = HDCAgent(**input_dict)
             input_dict['output_size'] = self.config.sac_config.defender_output_dim
             self.defender = HDCAgent(**input_dict)
@@ -182,9 +182,9 @@ class SACAgent(AbstractSACAgent):
 
         with torch.no_grad():
             if attacker:
-                act_values = self.attacker(state)
+                act_values = torch.zeros(self.config.sac_config.attacker_output_dim).index_fill(0, self.attacker(state), 1)
             else:
-                act_values = self.defender(state)
+                act_values = torch.zeros(self.config.sac_config.defender_output_dim).index_fill(0, self.attacker(state), 1)
 
         return legal_actions[torch.argmax(act_values[legal_actions]).item()]
 
@@ -201,7 +201,7 @@ class SACAgent(AbstractSACAgent):
         if len(self.train_result.avg_episode_steps) > 0:
             self.config.logger.warning("starting training with non-empty result object")
         done = False
-        obs = self.env.reset(update_stats=False)
+        obs = self.env.reset(update_stats=False)[0]
         attacker_obs, defender_obs = obs
         obs_state_a = self.update_state(attacker_obs, defender_obs, attacker=True, state=[])
         obs_state_d = self.update_state(attacker_obs, defender_obs, attacker=False, state=[])
@@ -225,8 +225,6 @@ class SACAgent(AbstractSACAgent):
             episode_attacker_reward = 0
             episode_defender_reward = 0
             episode_step = 0
-            episode_attacker_loss = 0.0
-            episode_defender_loss = 0.0
             while not done:
                 if self.config.render:
                     self.env.render(mode="human")
@@ -247,7 +245,7 @@ class SACAgent(AbstractSACAgent):
                 action = (attacker_action, defender_action)
 
                 # Take a step in the environment
-                obs_prime, reward, done, _ = self.env.step(action)
+                obs_prime, reward, done, _, _ = self.env.step(action)
                 attacker_obs_prime, defender_obs_prime = obs_prime
                 obs_state_a_prime = self.update_state(attacker_obs_prime, defender_obs_prime, attacker=True, state=[])
                 obs_state_d_prime = self.update_state(attacker_obs_prime, defender_obs_prime, attacker=False, state=[])
@@ -363,7 +361,7 @@ class SACAgent(AbstractSACAgent):
 
             # Reset environment for the next episode and update game stats
             done = False
-            obs = self.env.reset(update_stats=True)
+            obs = self.env.reset(update_stats=True)[0]
             attacker_obs, defender_obs = obs
             obs_state_a = self.update_state(attacker_obs, defender_obs, attacker=True, state=[])
             obs_state_d = self.update_state(attacker_obs, defender_obs, attacker=False, state=[])
@@ -374,7 +372,7 @@ class SACAgent(AbstractSACAgent):
         self.config.logger.info("Training Complete")
 
         # Final evaluation (for saving Gifs etc)
-        self.eval(self.config.num_episodes-1, log=False)
+        #self.eval(self.config.num_episodes-1, log=False)
 
         # Save Q-networks
         self.save_model()
@@ -814,17 +812,17 @@ class SACAgent(AbstractSACAgent):
         a_ns, d_ns = next_state
         
         attacker_transition = Transition(
-            torch.tensor(a_s, device=self.device, dtype=torch.float32),
-            a_a.unsqueeze(dim=0),
-            torch.tensor(a_ns, device=self.device, dtype=torch.float32),
+            torch.tensor(a_s.flatten(), device=self.device, dtype=torch.float32),
+            torch.tensor([a_a], device=self.device, dtype=torch.int64),
+            torch.tensor(a_ns.flatten(), device=self.device, dtype=torch.float32),
             torch.tensor([a_r], device=self.device, dtype=torch.float32),
             torch.tensor([done], device=self.device, dtype=torch.float32)
         )
         
         defender_transition = Transition(
-            torch.tensor(d_s, device=self.device, dtype=torch.float32),
-            d_a.unsqueeze(dim=0),
-            torch.tensor(d_ns, device=self.device, dtype=torch.float32),
+            torch.tensor(d_s.flatten(), device=self.device, dtype=torch.float32),
+            torch.tensor([d_a], device=self.device, dtype=torch.int64),
+            torch.tensor(d_ns.flatten(), device=self.device, dtype=torch.float32),
             torch.tensor([d_r], device=self.device, dtype=torch.float32),
             torch.tensor([done], device=self.device, dtype=torch.float32)
         )
