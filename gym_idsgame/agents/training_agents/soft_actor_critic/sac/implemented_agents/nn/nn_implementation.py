@@ -23,7 +23,8 @@ class QFunction:
                  target : 'QFunctionTarget',
                  alpha : 'Alpha',
                  lr : float,
-                 discount : float) -> None:
+                 discount : float,
+                 extra_info : str = '') -> None:
         
         """Will create a q function that will use two q models"""
         self._q1 = BaseNN(input_size, output_size, hidden_size, id=1)
@@ -36,6 +37,8 @@ class QFunction:
         self._target = target
         self._alpha = alpha
         self._discount = discount
+        
+        self._extra_info = extra_info
 
 
     def set_actor(self, actor : 'Actor') -> None:
@@ -99,8 +102,8 @@ class QFunction:
         ls1.backward()
         ls2.backward()
 
-        summary_writer.add_scalar('QFunc1 Loss', ls1, steps)
-        summary_writer.add_scalar('QFunc2 Loss', ls2, steps)
+        summary_writer.add_scalar(f'QFunc1 Loss{self._extra_info}', ls1, steps)
+        summary_writer.add_scalar(f'QFunc2 Loss{self._extra_info}', ls2, steps)
         
 class QFunctionTarget:
 
@@ -137,11 +140,14 @@ class Alpha:
     def __init__(self, 
                 action_space_size : int,
                 scale : float,
-                lr : float) -> None:
+                lr : float,
+                extra_info : str = '') -> None:
         
         self._target_ent = -scale * torch.log(1 / torch.tensor(action_space_size))
         self._log_alpha = torch.zeros(1, requires_grad=True)
         self._optim = optim.Adam([self._log_alpha], lr = lr, eps=_EPS)
+        
+        self._extra_info = extra_info
 
     def to(self, device) -> None:
         """Will move the alpha to the device"""
@@ -161,7 +167,7 @@ class Alpha:
         loss.backward()
         self._optim.step()
 
-        summary_writer.add_scalar('Alpha Loss', loss, steps)
+        summary_writer.add_scalar(f'Alpha Loss {self._extra_info}', loss, steps)
 
 
 class Actor(BaseNN):
@@ -172,13 +178,16 @@ class Actor(BaseNN):
                  hidden_size,
                  target : QFunctionTarget, 
                  alpha : 'Alpha',
-                 lr : float) -> None:
+                 lr : float,
+                 extra_info : str = '') -> None:
         
         super().__init__(input_size, output_size, hidden_size)
         self._target = target
         self._alpha = alpha
         self._optim = optim.Adam(self.parameters(), lr=lr, eps=_EPS)
 
+        self._extra_info = extra_info
+        
     def forward(self, x : Tensor) -> tuple[Tensor]:
         """Will give the action, log_prob, and action_probs of action"""
 
@@ -210,4 +219,4 @@ class Actor(BaseNN):
 
         self._alpha.update(log_probs, action_probs, steps, summary_writer) #Do the update in the actor in order to not recaluate probs
 
-        summary_writer.add_scalar('Actor Loss', loss, steps)
+        summary_writer.add_scalar(f'Actor Loss {self._extra_info}', loss, steps)

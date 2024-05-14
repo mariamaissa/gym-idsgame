@@ -20,14 +20,15 @@ class Agent:
                  alpha_scale : float,
                  target_update : int, #When the target should update
                  update_frequency : int, #When the models should update,
-                 summary_writer : SummaryWriter
+                 summary_writer : SummaryWriter,
+                 extra_info : str = ''
                  ) -> None:
         
         self._actor_encoder = RBFEncoder(input_size, hyper_dim)
         self._critic_encoder = EXPEncoder(input_size, hyper_dim)
 
         self._target_q = TargetQFunction(tau, None)
-        self._alpha = Alpha(output_size, alpha_scale, alpha_lr)
+        self._alpha = Alpha(output_size, alpha_scale, alpha_lr, extra_info)
 
         self._actor = Actor(hyper_dim,
                             output_size,
@@ -35,7 +36,8 @@ class Agent:
                             self._actor_encoder,
                             self._critic_encoder,
                             self._alpha,
-                            self._target_q)
+                            self._target_q,
+                            extra_info)
         
         self._q_function = QFunction(hyper_dim,
                                      output_size,
@@ -45,7 +47,8 @@ class Agent:
                                      self._target_q,
                                      self._alpha,
                                      critic_lr,
-                                     discount)
+                                     discount,
+                                     extra_info)
         
         self._target_q.set_actual(self._q_function)
         
@@ -71,6 +74,8 @@ class Agent:
 
         if self._steps % self._target_update == 0:
             self._target_q.update()
+            
+        self._steps += 1
 
     def save_actor(self, extra_info : str = '') -> None:
         """Will save the actor to a file named bestweights_extrainfo"""

@@ -20,11 +20,13 @@ class Alpha:
     def __init__(self, 
                 action_space_size : int,
                 scale : float,
-                lr : float) -> None:
+                lr : float,
+                extra_info : str = '') -> None:
         
         self._target_ent = -scale * torch.log(1 / torch.tensor(action_space_size))
         self._log_alpha = torch.zeros(1, requires_grad=True)
         self._optim = optim.Adam([self._log_alpha], lr = lr, eps=_EPS)
+        self._extra_info = extra_info
 
     def __call__(self) -> float:
         """Will give the current alpha"""
@@ -39,7 +41,7 @@ class Alpha:
         loss.backward()
         self._optim.step()
 
-        summary_writer.add_scalar('Alpha Loss', loss, steps)
+        summary_writer.add_scalar(f'Alpha Loss {self._extra_info}', loss, steps)
 
     def to(self, dev : device) -> None:
         self._target_ent.to(dev)
@@ -89,7 +91,8 @@ class QFunction:
                  target : 'TargetQFunction',
                  alpha : Alpha,
                  lr : float,
-                 discount : float) -> None:
+                 discount : float,
+                 extra_info : str = '') -> None:
         """Will create a Q function that has two q models"""
 
         self._q1 = QModel(hvec_dim, action_dim)
@@ -103,6 +106,8 @@ class QFunction:
         self._lr = lr
         self._discount = discount
         self._alpha = alpha
+        
+        self._extra_info = extra_info
 
     def __call__(self, state) -> Tensor:
         """State should be an encoded h_vect"""
@@ -141,8 +146,8 @@ class QFunction:
             l1 : Tensor = next_q - q1_a
             l2 : Tensor = next_q - q2_a
 
-            summary_writer.add_scalar("QFunc1 Loss", l1.mean(), steps)
-            summary_writer.add_scalar("QFunc2 Loss", l2.mean(), steps)
+            summary_writer.add_scalar(f'QFunc1 Loss {self._extra_info}', l1.mean(), steps)
+            summary_writer.add_scalar(f'QFunc2 Loss {self._extra_info}', l2.mean(), steps)
 
             #Creates a matrix where each row is the hypervector that should be bundled with the model
             matrix_l1 = l1 * ce_state * self._lr
@@ -206,7 +211,8 @@ class Actor(nn.Module):
                  actor_encoder : EXPEncoder,
                  critic_encoder : RBFEncoder,
                  alpha : Alpha, 
-                 target_q : TargetQFunction) -> None:
+                 target_q : TargetQFunction,
+                 extra_info : str = '') -> None:
         super().__init__()
 
         self._a_encoder = actor_encoder
@@ -219,6 +225,8 @@ class Actor(nn.Module):
         self._alpha = alpha
 
         self._optim = optim.Adam(self.parameters(), lr=lr)
+        
+        self._extra_info = extra_info
 
     def forward(self, state : Tensor) -> tuple[Tensor]:
         """Will give the action, log_prob, action_probs of action"""
@@ -252,7 +260,7 @@ class Actor(nn.Module):
 
         self._alpha.update(log_probs, action_probs, steps, summary_writer) #Do the update in the actor in order to not recaluate probs
 
-        summary_writer.add_scalar('Actor Loss', loss, steps)
+        summary_writer.add_scalar(f'Actor Loss {self._extra_info}', loss, steps)
 
     def save(self, file_name ='best_weights.pt') -> None:
         """Will save the model in the folder 'model' in the dir that the script was run in."""

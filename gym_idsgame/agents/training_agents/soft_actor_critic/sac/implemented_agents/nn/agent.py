@@ -20,18 +20,20 @@ class Agent:
                  alpha_scale : float,
                  target_update : int, #When the target should update
                  update_frequency : int, #When the models should update,
-                 summary_writer : SummaryWriter
+                 summary_writer : SummaryWriter,
+                 extra_info : str = ''
                  ) -> None:
         
         self._target_q = QFunctionTarget(None, tau)
-        self._alpha = Alpha(output_size, alpha_scale, alpha_lr)
+        self._alpha = Alpha(output_size, alpha_scale, alpha_lr, extra_info)
 
         self._actor = Actor(input_size, 
                             output_size, 
                             HIDDEN_SIZE,
                             self._target_q,
                             self._alpha, 
-                            policy_lr)
+                            policy_lr,
+                            extra_info)
         
         self._q_function = QFunction(input_size,
                                      output_size,
@@ -40,7 +42,8 @@ class Agent:
                                      self._target_q,
                                      self._alpha,
                                      critic_lr,
-                                     discount)
+                                     discount,
+                                     extra_info)
         
         self._target_q.set_actual(self._q_function)
         

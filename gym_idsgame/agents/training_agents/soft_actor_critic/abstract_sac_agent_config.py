@@ -2,6 +2,7 @@
 Configuration for AbstractSACAgent
 """
 import csv
+import os
 from gym_idsgame.agents.training_agents.soft_actor_critic.sac.sac_config import SACConfig
 from torch.utils.tensorboard import SummaryWriter
 
@@ -108,7 +109,10 @@ class AbstractSACAgentConfig:
         :param file_path: path to the file
         :return: None
         """
-        with open(file_path, "w") as f:
+        
+        os.makedirs(file_path, exist_ok=True)
+        
+        with open(f'{file_path}/log.csv', "w") as f:
             writer = csv.writer(f)
             writer.writerow(["parameter", "value"])
             writer.writerow(["render", str(self.render)])
@@ -140,7 +144,6 @@ class AbstractSACAgentConfig:
                 writer.writerow(["alpha_scale", str(self.sac_config.alpha_scale)])
                 writer.writerow(["target_update", str(self.sac_config.target_update)])
                 writer.writerow(["update_frequency", str(self.sac_config.update_frequency)])
-                writer.writerow(["explore_steps", str(self.sac_config.explore_steps)])
                 writer.writerow(["buffer_size", str(self.sac_config.buffer_size)])
                 writer.writerow(["sample_size", str(self.sac_config.sample_size)])
                 writer.writerow(["max_steps", str(self.sac_config.max_steps)])

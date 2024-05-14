@@ -39,7 +39,7 @@ class BaseNN(nn.Module):
         torch.save(self.state_dict(), file_dir)
 
     @property
-    def _extra_info(self):
+    def _extra(self):
         """Can be overridden to give any extra information about the NN"""
         if self._id is None:
             return ''

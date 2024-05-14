@@ -140,18 +140,21 @@ class SACAgent(AbstractSACAgent):
                 'alpha_scale' : self.config.sac_config.alpha_scale,
                 'target_update' : self.config.sac_config.target_update,
                 'update_frequency' : self.config.sac_config.update_frequency,
-                'summary_writer' : self.tensorboard_writer
+                'summary_writer' : self.tensorboard_writer,
+                'extra_info' : 'attacker'
             }
         
         if self.config.sac_config.hdc_agent:
             input_dict['hyper_dim'] = self.config.sac_config.hypervec_dim
             self.attacker = HDCAgent(**input_dict)
             input_dict['output_size'] = self.config.sac_config.defender_output_dim
+            input_dict['extra_info'] = 'defender'
             self.defender = HDCAgent(**input_dict)
             
         else:
             self.attacker = NNAgent(**input_dict)
             input_dict['output_size'] = self.config.sac_config.defender_output_dim
+            input_dict['extra_info'] = 'defender'
             self.defender = NNAgent(**input_dict)
 
 
